@@ -11,3 +11,12 @@ be installed at the very first time the program is run so the user does not need
 
 ## Demo Run:
 
+https://user-images.githubusercontent.com/83048295/130008623-724463a6-57b2-409a-919c-6ef4463ae9f1.mp4
+
+
+## Screen Shots:
+
+![Music Player 8_18_2021 9_39_42 PM](https://user-images.githubusercontent.com/83048295/130008738-74829540-7792-4f89-baf0-b407d35894ef.png)
+![Music Player 8_18_2021 9_39_20 PM](https://user-images.githubusercontent.com/83048295/130008743-2bcb0829-09ff-4b51-8bdf-a9e1509d51ed.png)
+
+

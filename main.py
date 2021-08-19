@@ -4,6 +4,7 @@ from tkinter.font import Font, BOLD
 from tkinter import simpledialog, messagebox
 from PIL import Image, ImageTk
 from threading import Timer
+from install_lib.install_lib import install_required_libraries 
 from music_player import MusicPlayer
 from youtube_download import download_song
 
@@ -41,7 +42,7 @@ def choose_playlist(root, option: int) -> None:
     '''
     create a screen to let the user choose a playlist that they
     want to take action on. If the player is about to download music,
-    there will be an option for them to create a new playlist.
+    there will be an extra option for them to create a new playlist.
     '''
     clear_screen(root)
     # create a canvas where inner components are centered
@@ -127,6 +128,14 @@ def create_download_screen(root: Tk, playlist: str):
     # a button to go back to the choose playlist screen
     make_button(root, 'Go Back', lambda: choose_playlist(root, DOWNLOAD_OPTION), 15)
 
+    def start_downloading():
+        if download_song(song.get(), artist.get(), path):
+            messagebox.showinfo(title='Done', message='The song is successfully added!')
+        else:
+            messagebox.showerror(title='Error', message='Invalid Input!')
+        song.delete(0, 'end')
+        artist.delete(0, 'end')
+
 
 
 def create_play_screen(root: Tk, playlist: str) -> None:
@@ -142,7 +151,7 @@ def create_play_screen(root: Tk, playlist: str) -> None:
         is finished. When it is, go to the next song in the list
         '''
         global timer
-        timer = Timer(player.get_song_duration(), lambda: next_song())
+        timer = Timer(player.get_song_duration(), lambda: end_of_song())
         timer.start()
 
     def close_window():
@@ -156,9 +165,11 @@ def create_play_screen(root: Tk, playlist: str) -> None:
  
     root.protocol("WM_DELETE_WINDOW", close_window)
     clear_screen(root)
+    repeat = False
     # create the music player and start timing since a song will be played right away
     player = MusicPlayer(HIDDEN_DIR + '/' + playlist)
     start_timing()
+
     # make the GUI
     add_space(root, 1)
     make_label(root, 'Now Playing:')
@@ -166,19 +177,22 @@ def create_play_screen(root: Tk, playlist: str) -> None:
     song_label = make_label(root, player.get_song_name())
     artist_label = make_label(root, player.get_artist_name())
     add_space(root)
-    canvas = Canvas(root)
-    make_button(
-        canvas, '<<<', lambda: previous_song(), 5, False
-    ).grid(row=0, column=0)
-    play_pause_button = make_button(
-        canvas, 'Pause', lambda: play_pause(), 10, False)
-    play_pause_button.grid(row=0, column=1)
-    make_button(
-        canvas, '>>>', lambda: next_song(), 5, False
-    ).grid(row=0, column=2)
-    canvas.pack()
-    add_space(root, 2)
-    make_button(root, 'Delete Song', lambda: delete_song(), 10)
+
+    buttons = Canvas(root)
+    repeat_button = Button(buttons, text='🔁', font=('Arial', 30), bd=0,
+        command=lambda: repeat_song())
+    repeat_button.grid(row=0, column=0)
+    Button(buttons, text='⏮', font=('Arial', 30), bd=0,
+        command=lambda: previous_song()).grid(row=0, column=1)
+    play_pause_button = Button(buttons, text='⏸', font=('Arial', 30), bd=0,
+        command=lambda: play_pause())
+    play_pause_button.grid(row=0, column=2)
+    Button(buttons, text='⏭', font=('Arial', 30), bd= 0,
+        command=lambda: next_song()).grid(row=0, column=3)
+    Button(buttons, text='🗑', font=('Arial', 30), bd= 0,
+        command=lambda: delete_song()).grid(row=0, column=4)
+    buttons.pack()
+
     add_space(root, 2)
     make_button(root, 'Go Back', lambda: go_back(), 15)
 
@@ -187,9 +201,9 @@ def create_play_screen(root: Tk, playlist: str) -> None:
         play or pause the song
         '''
         if player.is_playing():
-            play_pause_button.config(text='Play')
+            play_pause_button.config(text='▶')
         else:
-            play_pause_button.config(text='Pause')
+            play_pause_button.config(text='⏸')
         player.play_pause()
 
     def next_song():
@@ -218,6 +232,17 @@ def create_play_screen(root: Tk, playlist: str) -> None:
         artist_label.config(text=player.get_artist_name())
         start_timing()
 
+    def end_of_song():
+        '''
+        move on to the next song when a song ends. If repeat is
+        on, then keep replaying the song
+        '''
+        if not repeat:
+            next_song()
+        else:
+            player.replay()
+            change_song()
+
     def delete_song():
         '''
         permanently delete the song from the playlist
@@ -230,6 +255,19 @@ def create_play_screen(root: Tk, playlist: str) -> None:
                     player.get_song_name() + player.get_artist_name())
             next_song()
 
+    def repeat_song():
+        '''
+        repeat the song until the user change song
+        '''
+        nonlocal repeat
+        if not repeat:
+            repeat = True
+            repeat_button.config(fg='blue')
+        else:
+            repeat = False
+            repeat_button.config(fg='black')
+
+
     def go_back():
         '''
         cancel the timer, destroy the music player,
@@ -241,9 +279,8 @@ def create_play_screen(root: Tk, playlist: str) -> None:
 
 
 
-
-def make_button(master, text: str, command, 
-                width:int=25, pack:bool=True) -> Button:
+def make_button(master, text: str, command, width:int=25, 
+                pack:bool=True) -> Button:
     '''
     create a button
     @return: the button created
@@ -251,21 +288,6 @@ def make_button(master, text: str, command,
     button = Button(master, width=width, height=1, command=command)
     button.config(fg='white', bg='brown', padx=5, text=text, 
         font=Font(family='Helvetica', weight=BOLD))
-    if pack:
-        button.pack()
-    return button
-
-
-def make_button_img(master, img_path: str, width: int, height: int, 
-                    command, pack:bool=True) -> Button:
-    '''
-    create a button based on the input image
-    @return: the button created
-    '''
-    image = Image.open(img_path)
-    image = image.resize((width, height), Image.ANTIALIAS)
-    resized_img = ImageTk.PhotoImage(image, master=master)
-    button = Button(master, image=resized_img, bd=0, command=command)
     if pack:
         button.pack()
     return button
@@ -318,13 +340,18 @@ def clear_screen(root: Tk) -> None:
 
 def init_playlists() -> None:
     '''
-    create the hidden playlist folder if it does not already exist
+    create the hidden playlist folder if it does not already exist.
+    And also install the required libraries since the if the hidden 
+    folder does not exist then it means program was never run before.
     '''
     if not os.path.exists(HIDDEN_DIR) or not os.path.isdir(HIDDEN_DIR):
+        # create the hidden folder '.playlists'
         os.makedirs(HIDDEN_DIR)
         if os.name == 'nt':
             os.system('attrib +h ' + HIDDEN_DIR)
-
+        # install required libraries
+        install_required_libraries()
+        
 
 
 ###################################################
@@ -333,7 +360,6 @@ def main():
     init_playlists()
     root = Tk()
     root.title('Music Player')
-    root.iconphoto(False, PhotoImage(file='images/music.png'))
     root.geometry(str(WIDTH) + 'x' + str(HEIGHT))
     create_mainscreen(root)
     root.mainloop()

@@ -11,6 +11,8 @@ be installed at the very first time the program is run so the user does not need
 
 ## Demo Run:
 
+* turn the sound on to hear the song in the demo run *
+
 https://user-images.githubusercontent.com/83048295/130008623-724463a6-57b2-409a-919c-6ef4463ae9f1.mp4
 
 

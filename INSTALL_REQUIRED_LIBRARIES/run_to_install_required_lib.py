@@ -7,15 +7,21 @@
 
 import sys
 import os
-import subprocess
+from subprocess import check_call
 
 
-def install(package):
+def __install(package: str) -> None:
     # install package
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    result = check_call([sys.executable, "-m", "pip", "install", package])
+    if result != 0:
+        print('An Error has occurred while installing ' + package)
+        _ = input("Press Enter to continue...")
+    else:
+        print('Successfully installed ' + package)
+        _ = input("Press Enter to continue...")
 
 
-def clear_screen():
+def __clear_screen() -> None:
     if os.name == 'nt':
         os.system('cls')
     else:
@@ -23,21 +29,20 @@ def clear_screen():
 
 
 
-if __name__ == "__main__":
-
+def install_required_libraries() -> None:
     # make sure pip is installed first
-    os.system(sys.executable + " " + os.getcwd() + "\INSTALL_REQUIRED_LIBRARIES\get_pip.py")
+    os.system(sys.executable + " " + os.getcwd() + "\install_lib\get_pip.py")
     
     _ = input("Press Enter to continue...")
-    clear_screen()
+    __clear_screen()
 
     # install youtube-dl
-    install('pygame')
+    __install('pygame')
     # install pyglet
-    install('pyglet')
+    __install('pyglet')
 
     # clear screen and exit
-    clear_screen()
+    #__clear_screen()
     print("---FINISHED---")
     _ = input("Press Enter to continue...")
-    clear_screen()
+    __clear_screen()

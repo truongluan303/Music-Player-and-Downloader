@@ -5,7 +5,6 @@ PLAY_OPTION = 1             # the indentifying code when user chooses to play so
 DOWNLOAD_OPTION = 2         # the identifying code when user chooses to download song
 playlist = ''               # the playlist that the user chooses
 
-
 import os
 import time
 from tkinter import *
@@ -13,13 +12,13 @@ from tkinter.font import Font, BOLD
 from tkinter import simpledialog, messagebox
 from shutil import rmtree
 from threading import Timer
-from install_lib.install_lib import install_required_libraries 
-
+from install_lib.install_lib import install_required_libraries
 
 '''
-check if the hidden folder where the playlists are saved in exists.
+check if the hidden folder where the playlists are stored exist.
 If it does not, that means the program has never been run before.
-So we install the required libraries and create the hidden folder.
+So we will install the required libraries, and then create the
+hidden folder.
 '''
 if not os.path.exists(HIDDEN_DIR) or not os.path.isdir(HIDDEN_DIR):
     # create the hidden folder '.playlists'
@@ -68,8 +67,13 @@ def choose_playlist(root, option: int) -> None:
     # display the correct message depends on the option chosen by the user
     if option == DOWNLOAD_OPTION:
         message = 'Please choose the playlist to download the song to'
+        if not os.listdir(HIDDEN_DIR):
+            message = 'You have no playlist yet! Please create one!'
     elif option == PLAY_OPTION:
         message = 'Please choose the playlist to play'
+        if not os.listdir(HIDDEN_DIR):
+            message = 'You have no playlist yet!\n'
+            message += 'Please go back and choose \'add song\', then create a playlist!'
     make_label(canvas, message)
     add_space(canvas, 3)
     # show all the available playlists for the user to choose from
@@ -420,8 +424,7 @@ def clear_screen(root: Tk) -> None:
     clear all the components in the master component
     '''
     for component in root.winfo_children():
-        component.destroy()
-
+        component.destroy()        
 
 
 

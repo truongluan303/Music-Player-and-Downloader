@@ -1,7 +1,6 @@
 from circular_doubly_linked_list import CircularDoublyLinkedList
-import os
-import re
 import pyglet
+import os
 
 
 class Song:
@@ -45,7 +44,7 @@ class MusicPlayer(CircularDoublyLinkedList):
         self.__read_files(playlist_path)
         self.now_playing = self.head            # the song that is currently being played
         self.playing = True                     # determine if music is being played or paused
-        self.current_song_duration = 0          # the duration of the currently playing song
+        self.current_song_duration = 0          # the duration of the currently playing song       
         self.__load_current_song()
 
     
@@ -62,6 +61,13 @@ class MusicPlayer(CircularDoublyLinkedList):
         go back to the previous song
         '''
         self.now_playing = self.now_playing.prev
+        self.__load_current_song()
+
+
+    def replay(self) -> None:
+        '''
+        replay the current song
+        '''
         self.__load_current_song()
 
     

@@ -123,7 +123,7 @@ def create_download_screen(root: Tk, playlist: str):
     canvas.pack()
     add_space(root, 2)
     make_button(root, 'DOWNLOAD SONG', 
-        lambda: download_song(song.get(), artist.get(), path))
+        lambda: start_downloading())
     add_space(root)
     # a button to go back to the choose playlist screen
     make_button(root, 'Go Back', lambda: choose_playlist(root, DOWNLOAD_OPTION), 15)
@@ -194,7 +194,7 @@ def create_play_screen(root: Tk, playlist: str) -> None:
     buttons.pack()
 
     add_space(root, 2)
-    make_button(root, 'Go Back', lambda: go_back(), 15)
+    make_button(root, 'Go Back', lambda: go_back(), 10)
 
     def play_pause():
         '''

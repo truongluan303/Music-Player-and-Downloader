@@ -1,8 +1,9 @@
 import os
+import time
 from tkinter import *
 from tkinter.font import Font, BOLD
 from tkinter import simpledialog, messagebox
-from PIL import Image, ImageTk
+from shutil import rmtree
 from threading import Timer
 from install_lib.install_lib import install_required_libraries 
 from music_player import MusicPlayer
@@ -15,7 +16,6 @@ HEIGHT = 400                # the GUI width
 PLAY_OPTION = 1             # the indentifying code when user chooses to play song
 DOWNLOAD_OPTION = 2         # the identifying code when user chooses to download song
 playlist = ''               # the playlist that the user chooses
-timer = None                # the timer to keep track of a song's duration
 
 
 
@@ -38,6 +38,7 @@ def create_mainscreen(root: Tk) -> None:
 
 
 
+
 def choose_playlist(root, option: int) -> None:
     '''
     create a screen to let the user choose a playlist that they
@@ -55,19 +56,19 @@ def choose_playlist(root, option: int) -> None:
         message = 'Please choose the playlist to play'
     make_label(canvas, message)
     add_space(canvas, 3)
-
     # show all the available playlists for the user to choose from
     for playlist in os.listdir(HIDDEN_DIR):
         name = os.path.basename(playlist)
         make_button(canvas, name.replace('-', ' '),
             lambda playlist=name: go_to_option(option, playlist))
+    add_space(canvas, 2)
     # if the user is about to download a song, then also add
     #   an option that allows them to create a new playlist
     if option == DOWNLOAD_OPTION:
-        add_space(canvas)
         make_button(canvas, 'Create New Playlist', 
-            lambda: create_playlist(option))
-    add_space(canvas)
+            lambda: create_playlist(option), 17, False).pack(side=LEFT)
+        make_button(canvas, 'Delete A Playlist', 
+            lambda: remove_playlist(), 17, False).pack(side=RIGHT)
     # a button to go back to the main screen
     make_button(canvas, 'Go Back', lambda: create_mainscreen(root), 10)
 
@@ -92,6 +93,35 @@ def choose_playlist(root, option: int) -> None:
         go_to_option(option, new_playlist)
 
 
+    def remove_playlist():
+        '''
+        permanently delete a playlist
+        '''
+        to_be_removed = simpledialog.askstring(
+            title='Enter Playlist Name', 
+            prompt='Enter the playlist you want to remove:'
+        )
+        if to_be_removed is None or to_be_removed == '':
+            messagebox.showerror(title='Error', 
+                message='Playlist name cannot be empty!')
+            return
+        dir_path = HIDDEN_DIR + '/' + to_be_removed.replace(' ', '-')
+        if not os.path.exists(dir_path):
+            messagebox.showerror(title='Error', 
+                message='Playlist does not exist!')
+            return
+        try:
+            # remove the playlist
+            rmtree(dir_path)
+            # reset the screen after the playlist is removed
+            choose_playlist(root, option)
+            messagebox.showinfo(title='Done!', 
+                message='The playlist is successfully removed!')
+        except OSError as err:
+            messagebox.showerror(title='An Error has occurred', 
+                message=err.strerror)
+
+
     def go_to_option(option: int, playlist: str) -> None:
         '''
         take the user to the option that they chose
@@ -100,6 +130,7 @@ def choose_playlist(root, option: int) -> None:
             create_download_screen(root, playlist)
         elif option == PLAY_OPTION:
             create_play_screen(root, playlist)
+
 
 
 
@@ -128,13 +159,19 @@ def create_download_screen(root: Tk, playlist: str):
     # a button to go back to the choose playlist screen
     make_button(root, 'Go Back', lambda: choose_playlist(root, DOWNLOAD_OPTION), 15)
 
+
     def start_downloading():
-        if download_song(song.get(), artist.get(), path):
+        exit_status = download_song(song.get(), artist.get(), path)
+        if exit_status == 0:
             messagebox.showinfo(title='Done', message='The song is successfully added!')
+        elif exit_status == -1:
+            messagebox.showerror(title='Input Error', message='Invalid Input!')
         else:
-            messagebox.showerror(title='Error', message='Invalid Input!')
+            messagebox.showerror(title='Error', message='An error occurred when downloading '
+                + 'the song!\nPlease check the console output for more information!')
         song.delete(0, 'end')
         artist.delete(0, 'end')
+
 
 
 
@@ -145,14 +182,21 @@ def create_play_screen(root: Tk, playlist: str) -> None:
     about the songs is displayed
     '''
 
-    def start_timing():
+    def start_timing(duration):
         '''
         start counting down the song duration to know when the song
         is finished. When it is, go to the next song in the list
         '''
-        global timer
-        timer = Timer(player.get_song_duration(), lambda: end_of_song())
+        nonlocal timer, counter
+        timer = Timer(duration, lambda: end_of_song())
         timer.start()
+        # beacause threading timer cannot pause, when we pause the song, the timer
+        #   is actually still running. Therefore, we need to keep track of the
+        #   time passed by since we play a song. And reset the threading timer
+        #   with the song's duration minus the time passed by whenever we continue 
+        #   a song after pausing it.
+        counter = time.perf_counter()
+
 
     def close_window():
         '''
@@ -163,12 +207,16 @@ def create_play_screen(root: Tk, playlist: str) -> None:
         timer.cancel()
         quit()
  
+
+    timer = None
+    counter = None
+    time_passed = None
     root.protocol("WM_DELETE_WINDOW", close_window)
     clear_screen(root)
     repeat = False
     # create the music player and start timing since a song will be played right away
     player = MusicPlayer(HIDDEN_DIR + '/' + playlist)
-    start_timing()
+    start_timing(player.get_song_duration())
 
     # make the GUI
     add_space(root, 1)
@@ -196,15 +244,28 @@ def create_play_screen(root: Tk, playlist: str) -> None:
     add_space(root, 2)
     make_button(root, 'Go Back', lambda: go_back(), 10)
 
+
     def play_pause():
         '''
         play or pause the song
         '''
+        nonlocal time_passed, counter
+        # if the song is playing then we pause the song
         if player.is_playing():
             play_pause_button.config(text='▶')
+            # we calculate the time passed since the song was played.
+            # and then end the timer.
+            end_counter = time.perf_counter()
+            time_passed = end_counter - counter
+            timer.cancel()
+        # if the song is paused, then we play the song
         else:
+            # when playing the song after pause, we set the timer to count
+            #   down the song's duration minus the time passed before the pause
             play_pause_button.config(text='⏸')
+            start_timing(player.get_song_duration() - time_passed)
         player.play_pause()
+
 
     def next_song():
         '''
@@ -213,6 +274,7 @@ def create_play_screen(root: Tk, playlist: str) -> None:
         player.to_next_song()
         change_song()
 
+
     def previous_song():
         '''
         go to the previous song in the list
@@ -220,17 +282,18 @@ def create_play_screen(root: Tk, playlist: str) -> None:
         player.to_previous_song()
         change_song()
 
+
     def change_song():
         '''
         change the song and update the GUI
         '''
-        global timer  
         # reset the timer
         timer.cancel()
         # update the GUI
         song_label.config(text=player.get_song_name())
         artist_label.config(text=player.get_artist_name())
-        start_timing()
+        start_timing(player.get_song_duration())
+
 
     def end_of_song():
         '''
@@ -243,6 +306,7 @@ def create_play_screen(root: Tk, playlist: str) -> None:
             player.replay()
             change_song()
 
+
     def delete_song():
         '''
         permanently delete the song from the playlist
@@ -254,6 +318,7 @@ def create_play_screen(root: Tk, playlist: str) -> None:
                     message='An Error occurred while deleting the song ' + 
                     player.get_song_name() + player.get_artist_name())
             next_song()
+
 
     def repeat_song():
         '''
@@ -279,6 +344,7 @@ def create_play_screen(root: Tk, playlist: str) -> None:
 
 
 
+
 def make_button(master, text: str, command, width:int=25, 
                 pack:bool=True) -> Button:
     '''
@@ -294,6 +360,7 @@ def make_button(master, text: str, command, width:int=25,
 
 
 
+
 def make_label(master, text: str, pack:bool=True) -> Label:
     '''
     create a text label
@@ -304,6 +371,7 @@ def make_label(master, text: str, pack:bool=True) -> Label:
     if pack:
         label.pack()
     return label
+
 
 
 
@@ -321,11 +389,13 @@ def make_entry(master, placeholder:str='', pack:bool=True) -> Entry:
 
 
 
+
 def add_space(canvas: Canvas, height:int=1) -> None:
     '''
     add a gap between components using an empty label
     '''
     Label(canvas, height=height).pack()
+
 
 
 
@@ -335,6 +405,7 @@ def clear_screen(root: Tk) -> None:
     '''
     for component in root.winfo_children():
         component.destroy()
+
 
 
 
@@ -352,6 +423,7 @@ def init_playlists() -> None:
         # install required libraries
         install_required_libraries()
         
+
 
 
 ###################################################

@@ -1,3 +1,11 @@
+HIDDEN_DIR = '.playlists'   # the hidden folder where the playlists are stored
+WIDTH = 700                 # the GUI height
+HEIGHT = 400                # the GUI width
+PLAY_OPTION = 1             # the indentifying code when user chooses to play song
+DOWNLOAD_OPTION = 2         # the identifying code when user chooses to download song
+playlist = ''               # the playlist that the user chooses
+
+
 import os
 import time
 from tkinter import *
@@ -6,16 +14,24 @@ from tkinter import simpledialog, messagebox
 from shutil import rmtree
 from threading import Timer
 from install_lib.install_lib import install_required_libraries 
+
+
+'''
+check if the hidden folder where the playlists are saved in exists.
+If it does not, that means the program has never been run before.
+So we install the required libraries and create the hidden folder.
+'''
+if not os.path.exists(HIDDEN_DIR) or not os.path.isdir(HIDDEN_DIR):
+    # create the hidden folder '.playlists'
+    os.makedirs(HIDDEN_DIR)
+    if os.name == 'nt':
+        os.system('attrib +h ' + HIDDEN_DIR)
+    # install required libraries
+    install_required_libraries()
+
+
 from music_player import MusicPlayer
 from youtube_download import download_song
-
-
-HIDDEN_DIR = '.playlists'   # the hidden folder where the playlists are stored
-WIDTH = 700                 # the GUI height
-HEIGHT = 400                # the GUI width
-PLAY_OPTION = 1             # the indentifying code when user chooses to play song
-DOWNLOAD_OPTION = 2         # the identifying code when user chooses to download song
-playlist = ''               # the playlist that the user chooses
 
 
 
@@ -409,27 +425,9 @@ def clear_screen(root: Tk) -> None:
 
 
 
-def init_playlists() -> None:
-    '''
-    create the hidden playlist folder if it does not already exist.
-    And also install the required libraries since the if the hidden 
-    folder does not exist then it means program was never run before.
-    '''
-    if not os.path.exists(HIDDEN_DIR) or not os.path.isdir(HIDDEN_DIR):
-        # create the hidden folder '.playlists'
-        os.makedirs(HIDDEN_DIR)
-        if os.name == 'nt':
-            os.system('attrib +h ' + HIDDEN_DIR)
-        # install required libraries
-        install_required_libraries()
-        
-
-
-
 ###################################################
 ###################### M A I N ####################
 def main():
-    init_playlists()
     root = Tk()
     root.title('Music Player')
     root.geometry(str(WIDTH) + 'x' + str(HEIGHT))

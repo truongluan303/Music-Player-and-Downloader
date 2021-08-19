@@ -2,38 +2,37 @@
 This file is responsible for scraping the data from youtube to look
 for the desired song, and then download it to the playlist
 '''
-# import
-import os
+
+import sys
 import re
 import urllib.request
-from tkinter import messagebox
+from subprocess import check_call
 
 
-def download_song(name: str, artist: str, path: str) -> None:
+def download_song(name: str, artist: str, path: str) -> bool:
     '''
     Download a song as m4a file with the specific name and artist from Youtube
+    @return: whether the download was successful
     '''
     if name == '' and artist == '':
-        messagebox.showerror(title='Error',
-            message='Please Enter The Song Name and Artist')
-        return
+        return False
     if not __check_input(name, artist):
-        messagebox.showerror(title='Error',
-            message='Invalid Input!')
-        return
+        return False
     url = __find_song(name, artist)
     # start with the song name and the folder where it will be stored
     filename = (artist + '-' + name).replace(' ', '_')
     download_to = path + '/' + filename + '.%(ext)s'
     print(download_to)
     # using youtube-dl, download the song as the filename and save it in the input path
-    os.system('youtube-dl -f bestaudio[ext=m4a] ' + url + ' -o ' + download_to)
-    messagebox.showinfo(title='Done', message='The song is successfully added!')
+    check_call([sys.executable, "-m", "youtube_dl", "-f", 
+        'bestaudio[ext=m4a]', url, '-o', download_to])
+    return True
 
 
 def __find_song(name: str, artist: str) -> str:
     '''
-    Find a song from youtube and save the audio to the desired playlist
+    Find the song from youtube and save the audio to the desired playlist.
+    The song downloaded will be the first result found.
     @return: the url to the song on Youtube
     '''
     search_query = name.replace(' ', '+') + '+' + artist.replace(' ', '+')
@@ -46,6 +45,16 @@ def __find_song(name: str, artist: str) -> str:
 
 def __check_input(name: str, artist: str) -> bool:
     '''
-    check if the input is valid
+    The input string must only contain letters and numbers. If it does
+    contain punctuation marks, then only commas, periods, question marks,
+    quotation marks, and exclamation marks are allowed.
     '''
+    allowed_punc = {',', '.', '!', '?', '"'}
+    for char1, char2 in zip(name, artist):
+        if not char1.isalnum() and not char1.isspace():
+            if char1 not in allowed_punc:
+                return False
+        if not char2.isalnum() and not char2.isspace():
+            if char2 not in allowed_punc:
+                return False
     return True

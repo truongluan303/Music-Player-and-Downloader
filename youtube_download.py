@@ -9,24 +9,22 @@ import urllib.request
 from subprocess import check_call
 
 
-def download_song(name: str, artist: str, path: str) -> bool:
+def download_song(name: str, artist: str, path: str) -> int:
     '''
     Download a song as m4a file with the specific name and artist from Youtube
     @return: whether the download was successful
     '''
-    if name == '' and artist == '':
-        return False
     if not __check_input(name, artist):
-        return False
+        return -1
     url = __find_song(name, artist)
     # start with the song name and the folder where it will be stored
     filename = (artist + '-' + name).replace(' ', '_')
     download_to = path + '/' + filename + '.%(ext)s'
     print(download_to)
     # using youtube-dl, download the song as the filename and save it in the input path
-    check_call([sys.executable, "-m", "youtube_dl", "-f", 
+    status = check_call([sys.executable, "-m", "youtube_dl", "-f", 
         'bestaudio[ext=m4a]', url, '-o', download_to])
-    return True
+    return status
 
 
 def __find_song(name: str, artist: str) -> str:
@@ -49,6 +47,10 @@ def __check_input(name: str, artist: str) -> bool:
     contain punctuation marks, then only commas, periods, question marks,
     quotation marks, and exclamation marks are allowed.
     '''
+    if name is None or artist is None:
+        return False
+    if name.isspace() or artist.isspace() or name == '' or artist == '':
+        return False
     allowed_punc = {',', '.', '!', '?', '"'}
     for char1, char2 in zip(name, artist):
         if not char1.isalnum() and not char1.isspace():

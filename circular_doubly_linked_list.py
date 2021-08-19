@@ -68,7 +68,7 @@ class CircularDoublyLinkedList(Generic[T]):
 
     def clear(self) -> None:
         '''
-        clear every node from the linekd list
+        clear every node from the linked list
         '''
         self.head = None
         self.size = 0

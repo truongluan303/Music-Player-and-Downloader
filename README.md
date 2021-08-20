@@ -22,3 +22,12 @@ https://user-images.githubusercontent.com/83048295/130008623-724463a6-57b2-409a-
 ![Music Player 8_18_2021 9_39_20 PM](https://user-images.githubusercontent.com/83048295/130008743-2bcb0829-09ff-4b51-8bdf-a9e1509d51ed.png)
 
 
+## How did I implement this program?
+
+This program can be seperated into two main parts, the song downloader and the song player.
+
+For the song downloader, the program simply use the user's input of the song's name and artist as the search query for youtube searching. Then the program will download the very first result found since it will most likely be the best match for the song that the user wants to download.
+
+For the music player, as mentioned above, it is implemented using a circular doubly linked list. This data structure will allow us to move in both forward and backward directions. And when we encounter the end of the songs list, it will continue at the beginning of the song list. The music player is a class inherited from the circular doubly lined list class and will have all basic features of a music player such as play/pause, to next song, to previous song, delete a song from playlist, etc. 
+
+
